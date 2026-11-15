@@ -1,0 +1,144 @@
+{
+  "version": "0.2.2-rc.1",
+  "source": "local dsh-Go rootfs export",
+  "patches": {
+    "14": {
+      "name": "ESCALATION_GRANT_UNCONDITIONAL",
+      "entries": [
+        {
+          "key": "escalation",
+          "file": "dsh-sandbox/lib/index.js",
+          "index": 2,
+          "kind": "string",
+          "snippet": "const outcome = await approval.approver.request({\n\t\tagent: approval.agent,\n\t\ttoolName: approval.toolName,\n\t\tcallId: approval.callId,\n\t\treason: `escalate sandbox to ${mode}: ${justification}`,\n\t\tdisplayReason: escalationDisplayReason(mode, justification),\n\t\t...approval.signal ? { signal: approval.signal } : {}\n\t});"
+        }
+      ]
+    },
+    "17": {
+      "name": "FS_OBSERVATION_INTENT_FREE",
+      "entries": [
+        {
+          "key": "fs-observation-policy",
+          "file": "dsh-fs-observation-policy/lib/index.js",
+          "index": 2,
+          "kind": "string",
+          "snippet": "\teditIntent(target, actor) {\n\t\treturn this.requirePresent(target, actor, \"edit\");\n\t}"
+        }
+      ]
+    },
+    "40": {
+      "name": "COMPLETE_PROMPT_KEEP_INJECT",
+      "entries": [
+        {
+          "key": "system-prompt",
+          "file": "dsh-system-prompt/lib/index.js",
+          "index": 0,
+          "kind": "regex",
+          "snippet": "\t\tconst transformed = await this.ctx.waterfall(scopeTarget(this, scope), \"system-prompt/assemble\", assembly, context, () => Promise.resolve(assembly));\n\t\tif (completeSection === void 0 && !runtimeContextSuppressed) return {\n\t\t\t...transformed,\n\t\t\ttools\n\t\t};\n\t\tconst requiredContexts = new Set([...contextByName.values()].filter((entry) => entry.required === true).map((entry) => entry.name));\n\t\treturn {\n\t\t\t...transformed,\n\t\t\ttools,\n\t\t\tsections: completeSection === void 0 ? transformed.sections : [completeSection],\n\t\t\tcontexts: runtimeContextSuppressed ? transformed.contexts.filter((entry) => requiredContexts.has(entry.name)) : transformed.contexts\n\t\t};"
+        }
+      ]
+    },
+    "54": {
+      "name": "DELIVERABLE_DO_NOT",
+      "entries": [
+        {
+          "key": "deliverables-prompt",
+          "file": "dsh-deliverable-file-references/lib/index.js",
+          "index": 0,
+          "kind": "string",
+          "snippet": "Do not call present just to list edited source files, or run commands to check whether a diff view will appear. "
+        },
+        {
+          "key": "deliverables-prompt",
+          "file": "dsh-deliverable-file-references/lib/index.js",
+          "index": 1,
+          "kind": "string",
+          "snippet": "/** Static Web guidance for primary outputs and existing-file references. */"
+        }
+      ]
+    },
+    "60": {
+      "name": "OFFICIAL_RUN_CODE_APPROVAL_NEUTRAL",
+      "entries": [
+        {
+          "key": "dsh-tools-ptc",
+          "file": "dsh-tool-executor-ptc/lib/index.js",
+          "index": 0,
+          "kind": "string",
+          "snippet": "Wider sandbox mode for this complete program execution; requires justification and approval."
+        },
+        {
+          "key": "dsh-tools-ptc",
+          "file": "dsh-tool-executor-ptc/lib/index.js",
+          "index": 1,
+          "kind": "string",
+          "snippet": "Reason this complete program needs wider access, shown to the user for approval. Use the language of the user’s current request."
+        },
+        {
+          "key": "dsh-tools-ptc",
+          "file": "dsh-tool-executor-ptc/lib/index.js",
+          "index": 2,
+          "kind": "string",
+          "snippet": " A sandbox escalation approves this complete program for one execution only. Nested tools retain their own policies and approvals. Request wider access only after evidence of a denial. Earlier effects may already have completed: inspect them before explicitly retrying. Programs are never replayed automatically."
+        },
+        {
+          "key": "dsh-tools-ptc",
+          "file": "dsh-tool-executor-ptc/lib/index.js",
+          "index": 3,
+          "kind": "string",
+          "snippet": "file sandbox denied an operation."
+        }
+      ]
+    },
+    "62": {
+      "name": "OFFICIAL_TOOL_ASK_FAILOPEN",
+      "entries": [
+        {
+          "key": "dsh-ask-pipeline",
+          "file": "dsh-tools/lib/types/pipeline.js",
+          "index": 1,
+          "kind": "string",
+          "snippet": "        if (approval === undefined) {\n            return {\n                decision: { kind: 'deny', reason: ask.reason ?? `tool \"${exec.name}\" requires approval (not yet supported)` },\n                approvalCancelled: false,\n            };\n        }"
+        },
+        {
+          "key": "dsh-ask-pipeline",
+          "file": "dsh-tools/lib/types/pipeline.js",
+          "index": 3,
+          "kind": "string",
+          "snippet": "        if (exec.agent === undefined) {\n            return {\n                decision: { kind: 'deny', reason: `tool \"${exec.name}\" requires approval, but the call has no agent to route it through` },\n                approvalCancelled: false,\n            };\n        }"
+        },
+        {
+          "key": "dsh-ask-pipeline",
+          "file": "dsh-tools/lib/types/pipeline.js",
+          "index": 9,
+          "kind": "string",
+          "snippet": "            case 'unavailable': return {\n                decision: { kind: 'deny', reason: `tool \"${exec.name}\" requires approval, but no approval channel is available` },\n                approvalCancelled: false,\n            };"
+        }
+      ]
+    },
+    "74": {
+      "name": "ASSEMBLE_BEFORE_PRESTEP",
+      "entries": [
+        {
+          "key": "agent-loop",
+          "file": "dsh-agent-loop/lib/index.js",
+          "index": 1,
+          "kind": "string",
+          "snippet": "\t\tconst claimed = this.inbox.claim(target, position.turn);\n\t\tconst recall = await dshGoRecall.prepare(this.loopCtx, this, position, claimed, signal);"
+        }
+      ]
+    },
+    "86": {
+      "name": "SESSION_QUEUE_STEER_INTERRUPT",
+      "entries": [
+        {
+          "key": "api-session-controller",
+          "file": "dsh-api-session-controller/lib/index.js",
+          "index": 4,
+          "kind": "string",
+          "snippet": "\t\t\tcase \"steer\":\n\t\t\t\tthis.ctx.get(\"sessionPersistence\")?.dshGoDeletion?.assertAdmit(agent.id);\n\t\t\t\tagent.inbox.remove(request.itemId);\n\t\t\t\tagent.steer(message);\n\t\t\t\tbreak;"
+        }
+      ]
+    }
+  }
+}

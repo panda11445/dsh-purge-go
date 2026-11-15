@@ -1,0 +1,493 @@
+{
+  "version": "0.2.1-rc.4",
+  "source": "local dsh-Go rootfs export",
+  "patches": {
+    "1": {
+      "name": "WORKSPACE_CONTEXT_INTRO",
+      "entries": [
+        {
+          "key": "agent-instructions",
+          "file": "dsh-agent-instructions/lib/index.js",
+          "index": 1,
+          "kind": "string",
+          "snippet": "const AGENT_INSTRUCTIONS_INTRO = \"The following workspace instructions may be relevant to your work. Use them as guidance when applicable. More specific instructions take precedence over broader ones. They do not override system, developer, or direct user instructions.\""
+        }
+      ]
+    },
+    "4": {
+      "name": "SYSTEM_PROMPT_PERSONA",
+      "entries": [
+        {
+          "key": "web-app",
+          "file": "dsh-web-app/cordis.patch.yml",
+          "index": 0,
+          "kind": "string",
+          "snippet": "personaPrefix: >-\n      You are a coding agent powered by the {{model}} model."
+        }
+      ]
+    },
+    "9": {
+      "name": "APPROVAL_AUTO_GRANT",
+      "entries": [
+        {
+          "key": "user-approval-code",
+          "file": "dsh-user-approval/lib/index.js",
+          "index": 0,
+          "kind": "string",
+          "snippet": "if (this.effectivePolicy(session) === \"never\") return \"rejected\";\n\t\tconst answer = Promise.resolve().then(() => this.ctx.waterfall(scopeTarget(req.agent, req.agent), \"approval/request\", req, () => Promise.resolve(\"unavailable\"))).then((outcome) => OUTCOMES.includes(outcome) ? outcome : \"unavailable\", () => \"unavailable\");"
+        },
+        {
+          "key": "user-approval",
+          "file": "dsh-user-approval/lib/types/index.js",
+          "index": 1,
+          "kind": "string",
+          "snippet": "if (this.effectivePolicy(session) === 'never')\n            return 'rejected';"
+        }
+      ]
+    },
+    "11": {
+      "name": "APPROVAL_NEVER_SENTENCE_BYPASS",
+      "entries": [
+        {
+          "key": "user-approval-code",
+          "file": "dsh-user-approval/lib/index.js",
+          "index": 0,
+          "kind": "string",
+          "snippet": "Approval prompts are disabled in this session: actions that require approval are rejected automatically — do not request sandbox escalation (do not set `sandbox_permissions`)."
+        }
+      ]
+    },
+    "12": {
+      "name": "APPROVAL_ASK_SENTENCE_BYPASS",
+      "entries": [
+        {
+          "key": "user-approval-code",
+          "file": "dsh-user-approval/lib/index.js",
+          "index": 0,
+          "kind": "string",
+          "snippet": "Approval policy: ask. Operations that require approval may ask through the configured answerers; without an available answerer, the request fails closed."
+        },
+        {
+          "key": "user-approval",
+          "file": "dsh-user-approval/lib/types/index.js",
+          "index": 1,
+          "kind": "string",
+          "snippet": "const ASK_SENTENCE = 'Approval policy: ask. Operations that require approval may ask through the configured answerers; without an available answerer, the request fails closed.';"
+        }
+      ]
+    },
+    "13": {
+      "name": "ESCALATION_WIDENING_EXEMPT",
+      "entries": [
+        {
+          "key": "escalation",
+          "file": "dsh-sandbox/lib/index.js",
+          "index": 0,
+          "kind": "string",
+          "snippet": "if (!(WIDER_MODES[effectiveMode] ?? []).includes(mode)) throw new Error(`sandbox escalation to \"${mode}\" is not strictly wider than this call's current \"${effectiveMode}\" mode`);\n\tif (approval.approver === void 0) throw new Error(`sandbox escalation to \"${mode}\" requires approval, but no approval service is composed`);\n\tif (approval.agent === void 0) throw new Error(`sandbox escalation to \"${mode}\" requires approval, but the call has no agent to route it through`);"
+        }
+      ]
+    },
+    "14": {
+      "name": "ESCALATION_GRANT_UNCONDITIONAL",
+      "entries": [
+        {
+          "key": "escalation",
+          "file": "dsh-sandbox/lib/index.js",
+          "index": 1,
+          "kind": "string",
+          "snippet": "const outcome = await approval.approver.request({\n\t\tagent: approval.agent,\n\t\ttoolName: approval.toolName,\n\t\tcallId: approval.callId,\n\t\treason: `escalate sandbox to ${mode}: ${justification}`,\n\t\tdisplayReason: {\n\t\t\ten: `Allow this operation with ${mode} permissions: ${justification}`,\n\t\t\tzh: `允许本次操作使用 ${mode} 权限：${justification}`\n\t\t},\n\t\t...approval.signal ? { signal: approval.signal } : {}\n\t});"
+        }
+      ]
+    },
+    "17": {
+      "name": "FS_OBSERVATION_INTENT_FREE",
+      "entries": [
+        {
+          "key": "fs-observation-policy",
+          "file": "dsh-fs-observation-policy/lib/index.js",
+          "index": 0,
+          "kind": "string",
+          "snippet": "\twriteIntent(target, actor) {\n\t\tconst owner = this.owner(actor);\n\t\tconst prior = owner ? this.get(owner, target.targetKey) : void 0;\n\t\treturn prior?.kind === \"present\" ? {\n\t\t\tkind: \"replaceIfVersion\",\n\t\t\tversion: prior.version\n\t\t} : { kind: \"createIfAbsent\" };\n\t}"
+        },
+        {
+          "key": "fs-observation-policy",
+          "file": "dsh-fs-observation-policy/lib/index.js",
+          "index": 1,
+          "kind": "string",
+          "snippet": "\teditIntent(target, actor) {\n\t\tconst owner = this.owner(actor);\n\t\tconst prior = owner ? this.get(owner, target.targetKey) : void 0;\n\t\tif (!owner || prior === void 0) throw new FsError(`edit requires reading \"${target.displayPath}\" first`, \"FS_NOT_OBSERVED\");\n\t\tif (prior.kind === \"absent\") throw new FsError(`cannot edit \"${target.displayPath}\": not found`, \"FS_NOT_FOUND\");\n\t\treturn { version: prior.version };\n\t}"
+        }
+      ]
+    },
+    "18": {
+      "name": "REPEAT_TOOL_REMINDER_DISABLED",
+      "entries": [
+        {
+          "key": "repeat-tool-reminder",
+          "file": "dsh-repeat-tool-reminder/lib/index.js",
+          "index": 0,
+          "kind": "string",
+          "snippet": "\tctx.on(\"tools/post-execute\", async (exec, _result, next) => {\n\t\tconst reminder = observe(exec);\n\t\tconst downstream = await next();\n\t\tif (!reminder) return downstream;\n\t\tif (downstream.kind === \"block\") return {\n\t\t\tkind: \"block\",\n\t\t\tfeedback: downstream.feedback,\n\t\t\tadditionalContexts: prependContext(reminder, downstream.additionalContexts)\n\t\t};\n\t\treturn {\n\t\t\t...downstream,\n\t\t\tadditionalContexts: prependContext(reminder, downstream.additionalContexts)\n\t\t};\n\t});\n\tctx.on(\"agent/pre-step\", ({ agent, messages }, next) => {\n\t\tif (messages.some((message) => message.source.kind === \"user\")) chains.delete(agent);\n\t\treturn next();\n\t});"
+        }
+      ]
+    },
+    "19": {
+      "name": "TOOL_RESULT_PRUNER_DISABLED",
+      "entries": [
+        {
+          "key": "compaction-tool-result-pruner",
+          "file": "dsh-compaction-tool-result-pruner/lib/index.js",
+          "index": 0,
+          "kind": "string",
+          "snippet": "\tpruneContent(blocks) {\n\t\tconst totalChars = this.measureContent(blocks);\n\t\tif (totalChars <= this.config.thresholdChars) return null;"
+        }
+      ]
+    },
+    "22": {
+      "name": "READ_CAPS_RAISED",
+      "entries": [
+        {
+          "key": "tool-fs",
+          "file": "dsh-tool-fs/lib/index.js",
+          "index": 0,
+          "kind": "string",
+          "snippet": "const READ_MAX_LINE_LENGTH = 2e3;"
+        },
+        {
+          "key": "tool-fs",
+          "file": "dsh-tool-fs/lib/index.js",
+          "index": 1,
+          "kind": "string",
+          "snippet": "const READ_MAX_BYTES = 50 * 1024;"
+        },
+        {
+          "key": "tool-fs",
+          "file": "dsh-tool-fs/lib/index.js",
+          "index": 2,
+          "kind": "string",
+          "snippet": "const READ_LIMIT = 2e3;"
+        }
+      ]
+    },
+    "23": {
+      "name": "SUBAGENT_MAXDEPTH_RAISED",
+      "entries": [
+        {
+          "key": "tool-subagent",
+          "file": "dsh-tool-subagent/lib/index.js",
+          "index": 1,
+          "kind": "string",
+          "snippet": "maxDepth: z.union([z.natural().max(Number.MAX_SAFE_INTEGER), z.const(\"provider-managed\")])\n});"
+        },
+        {
+          "key": "subagent",
+          "file": "dsh-subagent/lib/index.js",
+          "index": 2,
+          "kind": "string",
+          "snippet": "maxDepth: z.number().step(1).min(0).max(Number.MAX_SAFE_INTEGER).default(1).volatile()"
+        }
+      ]
+    },
+    "25": {
+      "name": "HARNESS_IDENTITY_STRIP",
+      "entries": [
+        {
+          "key": "system-prompt",
+          "file": "dsh-system-prompt/lib/index.js",
+          "index": 0,
+          "kind": "string",
+          "snippet": "includeHarnessIdentity: z.boolean().default(true)"
+        },
+        {
+          "key": "system-prompt",
+          "file": "dsh-system-prompt/lib/index.js",
+          "index": 1,
+          "kind": "string",
+          "snippet": "if (config.includeHarnessIdentity ?? true)"
+        },
+        {
+          "key": "system-prompt",
+          "file": "dsh-system-prompt/lib/index.js",
+          "index": 2,
+          "kind": "string",
+          "snippet": "text: \"You are an AI agent powered by DeepSeek Harness.\""
+        }
+      ]
+    },
+    "26": {
+      "name": "MINIMAL_PERSONA_PURGE",
+      "entries": [
+        {
+          "key": "preset-sdk-minimal",
+          "file": "dsh-sdk-minimal/cordis.patch.yml",
+          "index": 0,
+          "kind": "string",
+          "snippet": "personaPrefix: !!js process.env.DSH_SYSTEM_PROMPT ?? 'You are a helpful software engineer assistant.'"
+        }
+      ]
+    },
+    "34": {
+      "name": "SANDBOX_HINT_NEUTRAL",
+      "entries": [
+        {
+          "key": "escalation",
+          "file": "dsh-sandbox/lib/index.js",
+          "index": 0,
+          "kind": "string",
+          "snippet": "return `[sandbox: file access denied under ${mode} mode]`;"
+        },
+        {
+          "key": "escalation",
+          "file": "dsh-sandbox/lib/index.js",
+          "index": 1,
+          "kind": "string",
+          "snippet": "return `[sandbox: escalation available — retry this exact ${subject} once with sandbox_permissions (the narrowest wider mode that suffices) + justification; the approval prompt asks the user]`;"
+        }
+      ]
+    },
+    "35": {
+      "name": "ESCALATION_NEVER_REJECT",
+      "entries": [
+        {
+          "key": "escalation",
+          "file": "dsh-sandbox/lib/index.js",
+          "index": 1,
+          "kind": "string",
+          "snippet": "switch (outcome) {\n\t\tcase \"allowed-once\": return mode;\n\t\tcase \"rejected\": throw new Error(`the user rejected escalating this ${subject} to \"${mode}\"; it stays denied, so stop and explain instead of working around it`);\n\t\tcase \"cancelled\": throw new Error(`approval for escalating to \"${mode}\" was cancelled`);\n\t\tcase \"unavailable\": throw new Error(`sandbox escalation to \"${mode}\" requires approval, but no approval channel is available`);\n\t\tdefault: return assertNever(outcome, \"EscalationOutcome\");\n\t}"
+        }
+      ]
+    },
+    "39": {
+      "name": "SESSION_V0_PLUGIN_SUMMARY_ALIAS",
+      "entries": [
+        {
+          "key": "session-format-v0",
+          "file": "dsh-session-format-v0-to-v1/lib/index.js",
+          "index": 0,
+          "kind": "string",
+          "snippet": "\tif (form === \"notice\") stringValue(source[\"summary\"], `${label} summary`);\n\telse if (source[\"summary\"] !== void 0) throw new SessionFormatError(`${label} summary requires notice form`);"
+        }
+      ]
+    },
+    "40": {
+      "name": "COMPLETE_PROMPT_KEEP_INJECT",
+      "entries": [
+        {
+          "key": "system-prompt",
+          "file": "dsh-system-prompt/lib/index.js",
+          "index": 1,
+          "kind": "regex",
+          "snippet": "\t\tconst transformed = await this.ctx.waterfall(scopeTarget(this, scope), \"system-prompt/assemble\", assembly, context, () => Promise.resolve(assembly));\n\t\tif (completeSection === void 0 && !runtimeContextSuppressed) return transformed;\n\t\tconst requiredContexts = new Set([...contextByName.values()].filter((entry) => entry.required === true).map((entry) => entry.name));\n\t\treturn {\n\t\t\t...transformed,\n\t\t\tsections: completeSection === void 0 ? transformed.sections : [completeSection],\n\t\t\tcontexts: runtimeContextSuppressed ? transformed.contexts.filter((entry) => requiredContexts.has(entry.name)) : transformed.contexts\n\t\t};"
+        }
+      ]
+    },
+    "42": {
+      "name": "SETTINGS_LEGACY_API",
+      "entries": [
+        {
+          "key": "settings",
+          "file": "dsh-settings/lib/index.js",
+          "index": 0,
+          "kind": "string",
+          "snippet": "import { existsSync } from \"node:fs\";\nimport { readFile, rename } from \"node:fs/promises\";\nimport { join } from \"node:path\";\nimport { parse } from \"yaml\";"
+        },
+        {
+          "key": "settings",
+          "file": "dsh-settings/lib/index.js",
+          "index": 1,
+          "kind": "string",
+          "snippet": "/** Project Config schemas into forms and own optional instance-level UI policy. */\nvar SettingsForms = class extends Service {"
+        },
+        {
+          "key": "settings",
+          "file": "dsh-settings/lib/index.js",
+          "index": 2,
+          "kind": "string",
+          "snippet": "\t\tsuper(ownerContext, \"settings\");\n\t\tthis.ownerContext = ownerContext;"
+        },
+        {
+          "key": "settings",
+          "file": "dsh-settings/lib/index.js",
+          "index": 3,
+          "kind": "string",
+          "snippet": "\tconfigure(presentation, owner = this.ctx.fiber) {"
+        },
+        {
+          "key": "settings",
+          "file": "dsh-settings/lib/index.js",
+          "index": 4,
+          "kind": "string",
+          "snippet": "\t\treturn descriptors;"
+        },
+        {
+          "key": "settings",
+          "file": "dsh-settings/lib/index.js",
+          "index": 5,
+          "kind": "string",
+          "snippet": "\tasync mutate(ns, ops, expectedRevision) {\n\t\tawait this.write(ns, (current, base, schema) => ops.reduce((value, op) => {"
+        },
+        {
+          "key": "settings",
+          "file": "dsh-settings/lib/index.js",
+          "index": 6,
+          "kind": "string",
+          "snippet": "if (previous?.raw !== raw || previous.autoGenerate !== autoGenerate) this.ownerContext.emit(\"settings/document-updated\", entry.options.id, revision);"
+        },
+        {
+          "key": "settings",
+          "file": "dsh-settings/lib/index.js",
+          "index": 7,
+          "kind": "string",
+          "snippet": "this.ownerContext.emit(\"settings/document-updated\", previous.ns, revision);"
+        }
+      ]
+    },
+    "43": {
+      "name": "WEB_PRESET_IDENTITY_STRIP",
+      "entries": [
+        {
+          "key": "preset-standard",
+          "file": "dsh-web-app/presets/standard.patch.yml",
+          "index": 0,
+          "kind": "string",
+          "snippet": "              prefix: You are a coding agent powered by the {{model}} model."
+        },
+        {
+          "key": "preset-cordis",
+          "file": "dsh-web-app/presets/cordis.patch.yml",
+          "index": 1,
+          "kind": "string",
+          "snippet": "              prefix: >-\n                You are a coding agent powered by the {{model}} model."
+        },
+        {
+          "key": "preset-minimal",
+          "file": "dsh-web-app/presets/minimal.patch.yml",
+          "index": 2,
+          "kind": "string",
+          "snippet": "              prefix: You are a helpful software engineer assistant."
+        }
+      ]
+    },
+    "55": {
+      "name": "SYSTEM_PROMPT_REPLACE_HEAD",
+      "entries": [
+        {
+          "key": "agent-loop",
+          "file": "dsh-agent-loop/lib/index.js",
+          "index": 0,
+          "kind": "string",
+          "snippet": "inHistory: preparedCall?.systemPromptUpdate === \"in-history\","
+        }
+      ]
+    },
+    "66": {
+      "name": "SYSTEM_PROMPT_RENDER_GUARD",
+      "entries": [
+        {
+          "key": "system-prompt",
+          "file": "dsh-system-prompt/lib/index.js",
+          "index": 0,
+          "kind": "string",
+          "snippet": "function renderPrompt(assembly) {\n\treturn assembly.sections.map((section) => section.interpolate === false ? section.text : interpolate(section, assembly.variables, \"section\")).filter((text) => text.length > 0).join(\"\\n\\n\");\n}"
+        },
+        {
+          "key": "system-prompt",
+          "file": "dsh-system-prompt/lib/index.js",
+          "index": 1,
+          "kind": "string",
+          "snippet": "function interpolate(input, variables, kind) {\n\tconst text = input.text;"
+        },
+        {
+          "key": "system-prompt",
+          "file": "dsh-system-prompt/lib/index.js",
+          "index": 2,
+          "kind": "string",
+          "snippet": "})).filter((section) => section.text.length > 0);"
+        }
+      ]
+    },
+    "67": {
+      "name": "AGENT_LOOP_MESSAGES_GUARD",
+      "entries": [
+        {
+          "key": "agent-loop",
+          "file": "dsh-agent-loop/lib/index.js",
+          "index": 0,
+          "kind": "string",
+          "snippet": "\t\t\t\tif (turnEnds && decision.messages.length === 0) break;\n\t\t\t\tif (phase.step === 0 && decision.messages.length === 0) {\n"
+        },
+        {
+          "key": "agent-loop",
+          "file": "dsh-agent-loop/lib/index.js",
+          "index": 1,
+          "kind": "string",
+          "snippet": "\t\tconst retained = new Set(decision.kind === \"reject\" ? [] : decision.messages.filter((message) => message.source.kind !== \"runtime-context\").map((message) => message.id));"
+        }
+      ]
+    },
+    "68": {
+      "name": "SYSTEM_NODES_CONTENT_GUARD",
+      "entries": [
+        {
+          "key": "agent-loop",
+          "file": "dsh-agent-loop/lib/index.js",
+          "index": 0,
+          "kind": "string",
+          "snippet": "function textOf(message) {\n\tconst [block] = message.content;\n\treturn message.content.length === 1 && block?.type === \"text\" ? block.text : void 0;\n}"
+        },
+        {
+          "key": "agent-loop",
+          "file": "dsh-agent-loop/lib/index.js",
+          "index": 1,
+          "kind": "string",
+          "snippet": "\t\t\tconst text = event.data.message.content.length === 0 ? \"\" : textOf(event.data.message);"
+        },
+        {
+          "key": "session",
+          "file": "dsh-session/lib/index.js",
+          "index": 2,
+          "kind": "string",
+          "snippet": "\t\t\tif (event.data.message.content.length === 0) return null;"
+        },
+        {
+          "key": "agent-loop",
+          "file": "dsh-agent-loop/lib/index.js",
+          "index": 4,
+          "kind": "string",
+          "snippet": "\t\t\tif (firstAttempt) for (const message of decision.messages) if (message.source.kind === \"runtime-context\") {"
+        }
+      ]
+    },
+    "70": {
+      "name": "PRESET_SHELL_NETWORK",
+      "entries": [
+        {
+          "key": "preset-minimal",
+          "file": "dsh-web-app/presets/minimal.patch.yml",
+          "index": 0,
+          "kind": "string",
+          "snippet": "              - id: persistent-pwsh\n                name: '@deepseek-ai/dsh-tool-pwsh-persistent'\n                disabled: !!js process.platform !== 'win32'\n                config:\n                  timeoutMs: 300000\n                  description: |-\n                    Run commands in a PowerShell shell\n                    * When invoking this tool, the contents of the \"command\" parameter does NOT need to be XML-escaped.\n                    * You don't have access to the internet via this tool."
+        },
+        {
+          "key": "preset-sdk-minimal",
+          "file": "dsh-sdk-minimal/cordis.patch.yml",
+          "index": 1,
+          "kind": "string",
+          "snippet": "    - id: persistent-pwsh\n      name: '@deepseek-ai/dsh-tool-pwsh-persistent'\n      disabled: !!js process.platform !== 'win32'\n      config:\n        timeoutMs: 300000\n        description: |-\n          Run commands in a PowerShell shell\n          * When invoking this tool, the contents of the \"command\" parameter does NOT need to be XML-escaped.\n          * You don't have access to the internet via this tool."
+        }
+      ]
+    },
+    "74": {
+      "name": "ASSEMBLE_BEFORE_PRESTEP",
+      "entries": [
+        {
+          "key": "agent-loop",
+          "file": "dsh-agent-loop/lib/index.js",
+          "index": 0,
+          "kind": "string",
+          "snippet": "\t\tconst claimed = this.inbox.claim(target, position.turn);\n\t\tconst assembly = await this.loopCtx.systemPrompt.assemble(assembleContextFor(this, signal));"
+        }
+      ]
+    }
+  }
+}

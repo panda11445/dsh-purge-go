@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Unit tests
+        run: npm test
+      - name: Entry syntax
+        run: |
+          node --check lib/index.js
+          node --check lib/core.js
+          node --check lib/dshgo.js
+          node --check lib/compat.js
+          node --check bin/dsh-purge.js
+      - name: Release checks (no tarball)
+        run: node scripts/release-check.mjs --skip-tests
+
+  compat-matrix:
+    # 需要一份宿主树：把导出的 host tgz 放到 COMPAT_HOST_TGZ artifact 或本地跑。
+    # 这里只做「脚本可用性」冒烟，真正的矩阵在发布前本地执行。
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Matrix script help
+        run: node scripts/compat-matrix.mjs --help

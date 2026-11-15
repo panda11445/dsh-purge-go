@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.repository == 'panda11445/dsh-purge-go'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Syntax check
+        run: |
+          node --check lib/index.js
+          node --check lib/core.js
+          node --check lib/reapply.js
+          node --input-type=module -e "import './lib/index.js'"
+
+      - name: Tests
+        run: npm test
+
+      - name: Build plaintext package and publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          version="$(node -p "require('./package.json').version")"
+          tag="v${version}"
+          tgz="$(npm pack --ignore-scripts | tail -n 1)"
+          cp -f "$tgz" "panda11445go-dsh-purge.tgz"
+          sha256sum "$tgz" > sha256.txt
+          printf '%s\n' "$version" > latest.txt
+
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" \
+              --target "$GITHUB_SHA" \
+              --title "dsh-purge ${version} · dsh-Go / Android" \
+              --notes-file release-notes.md
+          fi
+
+          gh release upload "$tag" \
+            "$tgz" \
+            "panda11445go-dsh-purge.tgz" \
+            install.sh \
+            scripts/install-in-app.sh \
+            latest.txt \
+            sha256.txt \
+            --clobber
+
+          echo "published https://github.com/panda11445/dsh-purge-go/releases/tag/${tag}"

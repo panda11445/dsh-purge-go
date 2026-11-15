@@ -1,0 +1,10 @@
+node_modules/
+*.tgz
+work/
+.npm-cache/
+.DS_Store
+.mobile-preview/
+
+# release artifacts
+dist/
+*.tgz

@@ -1,0 +1,18 @@
+{
+  "name": "@panda11445go/dsh-purge",
+  "version": "1.0.0",
+  "title": {
+    "zh": "dsh-purge",
+    "en": "dsh-purge"
+  },
+  "summary": {
+    "zh": "移植自 YuJunZhiXue/dsh-purge 的破甲 / 红队评测提示词包，适配 dsh-Go Android 本机引擎（原生面板、状态条、镜像更新）。原作者 YuJunZhiXue。",
+    "en": "Port of YuJunZhiXue/dsh-purge for the dsh-Go Android local engine (native panel, composer strip, mirror updates). Original author: YuJunZhiXue."
+  },
+  "category": "tools",
+  "screenshots": [
+    "https://raw.githubusercontent.com/panda11445/dsh-purge-go/main/docs/screenshots/panel.png",
+    "https://raw.githubusercontent.com/panda11445/dsh-purge-go/main/docs/screenshots/installer.png"
+  ],
+  "homepage": "https://github.com/panda11445/dsh-purge-go"
+}

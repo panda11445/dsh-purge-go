@@ -1,0 +1,31 @@
+dsh-purge
+Copyright 2026 YuJunZhiXue
+
+Source: https://github.com/YuJunZhiXue/dsh-purge
+
+This product is licensed under the Apache License, Version 2.0.
+Derivative works must retain this NOTICE and attribution.
+
+--------------------------------------------------------------------------
+This distribution: @panda11445go/dsh-purge  (dsh-Go / Android port)
+
+  Original project : dsh-purge by YuJunZhiXue
+                     https://github.com/YuJunZhiXue/dsh-purge
+                     Copyright 2026 YuJunZhiXue — Apache-2.0
+
+  Port maintainer  : panda11445go
+                     https://github.com/panda11445/dsh-purge-go
+                     npm: @panda11445go/dsh-purge
+
+  Scope of changes : dsh-Go / Android local-engine adaptation only —
+                     host detection inside the app rootfs, no self-restart
+                     (the app restarts the engine), native panel / composer
+                     strip / settings form, in-app terminal installer,
+                     mirror-based update check, 0.2.2-rc.1 patch set.
+
+  This port is NOT affiliated with, sponsored by, or endorsed by the
+  original author, and does not represent the original author's views.
+  Redistribution — with or without modification — must keep this NOTICE
+  and the attribution above. Do not claim the original work as your own
+  and do not resell it.
+--------------------------------------------------------------------------

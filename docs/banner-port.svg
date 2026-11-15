@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" role="img" aria-label="dsh-purge dsh-Go Android port">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1220"/>
+      <stop offset="0.55" stop-color="#111a2e"/>
+      <stop offset="1" stop-color="#1b1030"/>
+    </linearGradient>
+    <linearGradient id="line" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#a855f7"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="300" fill="url(#bg)"/>
+  <rect x="0" y="0" width="1200" height="6" fill="url(#line)"/>
+  <text x="72" y="118" fill="#f8fafc" font-family="sans-serif" font-size="66" font-weight="700">dsh-purge</text>
+  <text x="72" y="170" fill="#93c5fd" font-family="sans-serif" font-size="34" font-weight="600">dsh-Go / Android 移植版</text>
+  <text x="72" y="222" fill="#94a3b8" font-family="sans-serif" font-size="24">原作 YuJunZhiXue · github.com/YuJunZhiXue/dsh-purge</text>
+  <g font-family="sans-serif" font-size="22" fill="#cbd5e1">
+    <rect x="72" y="246" width="150" height="36" rx="18" fill="#1e293b" stroke="#334155"/>
+    <text x="90" y="270" fill="#e2e8f0">原生面板</text>
+    <rect x="236" y="246" width="150" height="36" rx="18" fill="#1e293b" stroke="#334155"/>
+    <text x="254" y="270" fill="#e2e8f0">镜像更新</text>
+    <rect x="400" y="246" width="190" height="36" rx="18" fill="#1e293b" stroke="#334155"/>
+    <text x="418" y="270" fill="#e2e8f0">终端一行安装</text>
+  </g>
+  <g transform="translate(880,86)">
+    <rect x="0" y="0" width="250" height="128" rx="20" fill="#0f172a" stroke="#334155" stroke-width="2"/>
+    <text x="26" y="46" fill="#e2e8f0" font-family="sans-serif" font-size="26" font-weight="700">非官方移植</text>
+    <text x="26" y="82" fill="#94a3b8" font-family="sans-serif" font-size="20">二次开发 · 署名保留</text>
+    <text x="26" y="110" fill="#64748b" font-family="sans-serif" font-size="18">not affiliated with original author</text>
+  </g>
+</svg>
