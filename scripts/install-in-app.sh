@@ -80,29 +80,106 @@ else
 fi
 
 N=0
-step() { N=$((N + 1)); printf '%s[%d/%d]%s %s%s%s\n' "$C_D" "$N" "$TOTAL" "$C_0" "$C_B" "$1" "$C_0"; }
-ok()   { printf '        %s✓%s %s\n' "$C_G" "$C_0" "$*"; }
-warn() { printf '        %s⚠%s %s\n' "$C_Y" "$C_0" "$*"; }
-bad()  { printf '        %s✗%s %s\n' "$C_R" "$C_0" "$*"; }
-note() { printf '        %s%s%s\n' "$C_D" "$*" "$C_0"; }
+START_TS=$(date +%s 2>/dev/null || printf '0')
+STEP_START="$START_TS"
+SPIN_PID=""
+
+# --check 只走 2 步，卸载 3 步，安装 6 步；进度条按实际模式算。
+case "${MODE:-install}" in
+  check) TOTAL=4 ;;
+  uninstall) TOTAL=3 ;;
+  *) TOTAL=6 ;;
+esac
+
+now() { date +%s 2>/dev/null || printf '0'; }
+panel_line() { printf '│ %s\n' "$*"; }
+result_line() { if [ "${TTY:-0}" = 1 ]; then printf '  │ %s\n' "$*"; else printf '    %s\n' "$*"; fi; }
+panel_rule() { printf '└────────────────────────────────────────────\n'; }
+
+panel_intro() {
+  [ "$TTY" = 1 ] || return 0
+  printf '\n%s┌─ dsh-purge 安装器 ─────────────────────────%s\n' "$C_C" "$C_0"
+  panel_line "profile  $PROFILE"
+  _target="${SPEC:-latest}"; _target="${_target##*/}"
+  panel_line "目标     ${_target} · 模式 ${MODE:-install}"
+  panel_line "日志     ${LOG:-/sdcard/Download/dsh-purge-install.log}"
+  panel_rule
+}
+
+progress_bar() {
+  [ "$TTY" = 1 ] || return 0
+  _pct=$((N * 100 / TOTAL))
+  [ "$_pct" -gt 100 ] && _pct=100
+  _fill=$((_pct * 18 / 100))
+  _bar=""
+  _i=0
+  while [ "$_i" -lt 18 ]; do
+    if [ "$_i" -lt "$_fill" ]; then _bar="${_bar}█"; else _bar="${_bar}░"; fi
+    _i=$((_i + 1))
+  done
+  printf '  %s[%s]%s %3d%%\n' "$C_D" "$_bar" "$C_0" "$_pct"
+}
+
+step() {
+  N=$((N + 1))
+  STEP_START=$(now)
+  if [ "$TTY" = 1 ]; then
+    printf '\n%s▸ [%d/%d]%s %s%s%s\n' "$C_D" "$N" "$TOTAL" "$C_0" "$C_B" "$1" "$C_0"
+    progress_bar
+  else
+    printf '[%d/%d] %s\n' "$N" "$TOTAL" "$1"
+  fi
+}
+ok()   { printf '  %s✓%s %s\n' "$C_G" "$C_0" "$*"; }
+warn() { printf '  %s⚠%s %s\n' "$C_Y" "$C_0" "$*"; }
+bad()  { printf '  %s✗%s %s\n' "$C_R" "$C_0" "$*"; }
+note() { printf '    %s%s%s\n' "$C_D" "$*" "$C_0"; }
 rule() { printf '%s────────────────────────────────────────────%s\n' "$C_D" "$C_0"; }
 
-SPIN_PID=""
+# 安装中的单行动画：不给非 TTY/--plain 输出添乱。
 spin() {
+  spin_stop
   [ "$TTY" = 1 ] || return 0
-  printf '\r        %s…%s %s' "$C_D" "$C_0" "$1" >/dev/tty 2>/dev/null
-  return 0
+  SPIN_MSG="$1"
+  SPIN_START=$(now)
+  (
+    _n=0
+    while :; do
+      case $((_n % 4)) in
+        0) _f='|' ;; 1) _f='/' ;; 2) _f='-' ;; *) _f='\' ;;
+      esac
+      _elapsed=$(( $(now) - SPIN_START ))
+      printf '\r    %s%s%s %s… %ss' "$C_D" "$_f" "$C_0" "$SPIN_MSG" "$_elapsed" >/dev/tty 2>/dev/null
+      _n=$((_n + 1))
+      sleep 1
+    done
+  ) &
+  SPIN_PID=$!
 }
 spin_stop() {
-  [ "$TTY" = 1 ] || return 0
-  printf '\r%s' "${ESC}[K" >/dev/tty 2>/dev/null
-  return 0
+  if [ -n "${SPIN_PID:-}" ]; then
+    kill "$SPIN_PID" 2>/dev/null || true
+    wait "$SPIN_PID" 2>/dev/null || true
+    SPIN_PID=""
+    [ "$TTY" = 1 ] && printf '\r%s' "${ESC}[K" >/dev/tty 2>/dev/null
+  fi
 }
 trap 'spin_stop' EXIT INT TERM
 
-fail() { spin_stop; bad "$*"; exit 1; }
+fail() {
+  spin_stop
+  bad "$*"
+  if [ "$TTY" = 1 ]; then
+    printf '\n%s┌─ 安装失败 ─────────────────────────────────%s\n' "$C_R" "$C_0"
+    panel_line "$*"
+    panel_line "日志 ${LOG:-/sdcard/Download/dsh-purge-install.log}"
+    panel_rule
+  fi
+  exit 1
+}
 STATUS_FILE=/sdcard/Download/dsh-purge-install.status
 set_status() { { printf '%s\n' "$1" > "$STATUS_FILE"; } 2>/dev/null || true; }
+
 
 
 
@@ -264,9 +341,13 @@ if [ "$PRINT_SOURCES" = 1 ]; then
   exit 0
 fi
 
+panel_intro
+
 # ---------------------------------------------------------------- 开始
-printf '\n%s  dsh-purge 安装器%s  %s%s%s\n' "$C_B" "$C_0" "$C_D" "$PKG_NAME" "$C_0"
-rule
+if [ "$TTY" = 0 ]; then
+  printf '\n%s  dsh-purge 安装器%s  %s%s%s\n' "$C_B" "$C_0" "$C_D" "$PKG_NAME" "$C_0"
+  rule
+fi
 
 # --bg：立刻返回，把安装丢到独立会话里跑，终端被引擎重载关闭也不受影响
 if [ "$BG" = 1 ]; then
@@ -311,7 +392,7 @@ cleanup_orphan_runs
 SPIN_FLAG="${TMPDIR:-/tmp}/dsh-purge-spin.$$"
 rm -f "${TMPDIR:-/tmp}"/dsh-purge-spin.* 2>/dev/null || true
 touch "$SPIN_FLAG" 2>/dev/null || true
-trap 'rm -f "$SPIN_FLAG" 2>/dev/null' EXIT INT TERM HUP
+trap 'spin_stop; rm -f "$SPIN_FLAG" 2>/dev/null' EXIT INT TERM HUP
 [ -d "$PROFILE_DIR" ] || fail "找不到 profile：$PROFILE_DIR（先在 App 里启动过一次引擎）"
 ok "dsh 就位 · profile=$PROFILE"
 
@@ -699,20 +780,43 @@ if { printf '时间: %s\n版本: %s\n位置: %s\n来源: %s\n缓存: %s\n' \
       "$(date 2>/dev/null)" "${_FINAL_VER:-?}" "$PROFILE_DIR/node_modules/$PKG_NAME" "${_SRC:-本地}" "${SPEC:-无}" \
       > "$RESULT_FILE"; } 2>/dev/null; then :; else RESULT_FILE=""; fi
 
-rule
-printf '  %s安装结果%s\n' "$C_B" "$C_0"
-printf '    版本    %s%s%s' "$C_0" "${_FINAL_VER:-?}" "$C_0"
-if [ -n "$HAVE_VER" ] && [ "${_FINAL_VER:-}" != "${HAVE_VER}" ]; then printf '（原 %s）' "$HAVE_VER"; fi
-printf '\n'
-printf '    位置    %s\n' "$PROFILE_DIR/node_modules/$PKG_NAME"
-if [ -n "$_SRC" ]; then printf '    来源    %s\n' "$_SRC"; fi
+_ELAPSED=$(( $(now) - START_TS ))
+_VER_LINE="版本    ${_FINAL_VER:-?}"
+if [ -n "$HAVE_VER" ] && [ "${_FINAL_VER:-}" != "${HAVE_VER}" ]; then
+  _VER_LINE="$_VER_LINE（原 $HAVE_VER）"
+fi
+_PKG_LINE=""
+_SHA_LINE=""
 if [ -n "${SPEC:-}" ] && [ -f "${SPEC:-}" ]; then
   _SZ=$(wc -c < "$SPEC" 2>/dev/null | tr -d ' ')
   _SHA=$(sha256_of "$SPEC" 2>/dev/null | cut -c1-16)
-  printf '    安装包  %s（%s 字节）\n' "$SPEC" "${_SZ:-?}"
-  if [ -n "$_SHA" ]; then printf '    sha256  %s…\n' "$_SHA"; fi
+  _PKG_LINE="安装包  $SPEC（${_SZ:-?} 字节）"
+  [ -n "$_SHA" ] && _SHA_LINE="sha256  ${_SHA}…"
 fi
-printf '    下一步  %s设置 › 本机引擎 › 重启%s\n' "$C_B" "$C_0"
-printf '            重启后：对话页输入框上方状态条，或「全部功能 › 清洗」开面板\n'
-if [ -n "$RESULT_FILE" ]; then printf '    结果    %s\n' "$RESULT_FILE"; fi
-printf '    日志    %s\n\n' "${LOG:-（无）}"
+
+if [ "${TTY:-0}" = 1 ]; then
+  printf '\n  %s┌─ 安装结果 ───────────────────────────────%s\n' "$C_C" "$C_0"
+  result_line "状态    ✓ 已就绪 · 耗时 ${_ELAPSED}s"
+  result_line "$_VER_LINE"
+  result_line "位置    $PROFILE_DIR/node_modules/$PKG_NAME"
+  [ -n "$_SRC" ] && result_line "来源    $_SRC"
+  [ -n "$_PKG_LINE" ] && result_line "$_PKG_LINE"
+  [ -n "$_SHA_LINE" ] && result_line "$_SHA_LINE"
+  result_line "下一步  ${C_B}设置 › 本机引擎 › 重启${C_0}"
+  result_line "重启后：对话页输入框上方状态条，或「全部功能 › 清洗」开面板"
+  [ -n "$RESULT_FILE" ] && result_line "结果    $RESULT_FILE"
+  result_line "日志    ${LOG:-（无）}"
+  printf '  └──────────────────────────────────────────%s\n\n' "$C_0"
+else
+  rule
+  printf '  %s安装结果%s（耗时 %ss）\n' "$C_B" "$C_0" "$_ELAPSED"
+  printf '    %s\n' "$_VER_LINE"
+  printf '    位置    %s\n' "$PROFILE_DIR/node_modules/$PKG_NAME"
+  [ -n "$_SRC" ] && printf '    来源    %s\n' "$_SRC"
+  [ -n "$_PKG_LINE" ] && printf '    %s\n' "$_PKG_LINE"
+  [ -n "$_SHA_LINE" ] && printf '    %s\n' "$_SHA_LINE"
+  printf '    下一步  %s设置 › 本机引擎 › 重启%s\n' "$C_B" "$C_0"
+  printf '            重启后：对话页输入框上方状态条，或「全部功能 › 清洗」开面板\n'
+  [ -n "$RESULT_FILE" ] && printf '    结果    %s\n' "$RESULT_FILE"
+  printf '    日志    %s\n\n' "${LOG:-（无）}"
+fi
